@@ -21,7 +21,15 @@ class FlicksViewController: UIViewController, UITableViewDataSource, UITableView
     var spinner = UIActivityIndicatorView(activityIndicatorStyle: .whiteLarge);
     var loadingView: UIView = UIView();
     let apiKey = "65a43a35d8bc9401ed324ccf8cec00f8"
-   
+    
+    @IBOutlet weak var networkErrorLabel: UILabel!
+    
+    lazy var refreshControl: UIRefreshControl = {
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: #selector(FlicksViewController.handleRefresh(_:)), for: UIControlEvents.valueChanged)
+        
+        return refreshControl
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,6 +37,13 @@ class FlicksViewController: UIViewController, UITableViewDataSource, UITableView
         // Do any additional setup after loading the view.
         tableView.dataSource = self;
         tableView.delegate = self;
+        
+        networkErrorLabel.text = "Network Error";
+        networkErrorLabel.textColor = UIColor.blue;
+        networkErrorLabel.isHidden = true;
+        self.refreshControl.backgroundColor = UIColor.purple
+        self.refreshControl.tintColor = UIColor.white;
+        self.tableView.addSubview(self.refreshControl);
         makeNetworkRequest();
         
     }
@@ -36,6 +51,17 @@ class FlicksViewController: UIViewController, UITableViewDataSource, UITableView
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
+    }
+    
+    func handleRefresh(_ refreshControl: UIRefreshControl) {
+        // Do some reloading of data and update the table view's data source
+        // Fetch more objects from a web service, for example...
+        
+        // Simply adding an object to the data source for this example
+        movies = nil;
+        self.tableView.reloadData();
+        makeNetworkRequest();
+        refreshControl.endRefreshing()
     }
     
     
@@ -130,6 +156,7 @@ class FlicksViewController: UIViewController, UITableViewDataSource, UITableView
                 // got an error in getting the data, need to handle it
                 print("error calling API")
                 print(response.result.error!)
+                self.networkErrorLabel.isHidden = false;
                 return
             }
 
@@ -139,6 +166,7 @@ class FlicksViewController: UIViewController, UITableViewDataSource, UITableView
             }
             self.movies = responseAsDictionary["results"] as? [NSDictionary];
             print(self.movies);
+            self.refreshControl.endRefreshing();
             self.tableView.reloadData();
             self.hideActivityIndicator();
         }
